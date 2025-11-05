@@ -1,0 +1,16 @@
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-4xl font-bold mb-4">歡迎來到知識管理系統</h1>
+
+    <% if user_signed_in? %>
+    <p class="text-xl mb-4">嗨，<%= current_user.email %>！</p>
+    <div class="space-x-4">
+        <%= link_to "登出", destroy_user_session_path, data: { turbo_method: :delete }, class: "bg-red-500 text-white px-4 py-2 rounded"%>
+    </div>
+    <% else %>
+    <p class="text-xl mb-4">請先登入或註冊</p>
+    <div class="space-x-4">
+        <%= link_to "登入", new_user_session_path, class: "bg-blue-500 text-white px-4 py-2 rounded" %>
+        <%= link_to "註冊", new_user_registration_path, class: "bg-green-500 text-white px-4 py-2 rounded" %>
+    </div>
+    <% end %>
+</div>

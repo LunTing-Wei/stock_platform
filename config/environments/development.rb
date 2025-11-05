@@ -34,6 +34,9 @@ Rails.application.configure do
   # Don't care if the mailer can't send.
   config.action_mailer.raise_delivery_errors = false
 
+  # Devise: 設定開發環境的預設 URL
+  config.action_mailer.default_url_options = { host: "localhost", port: 3000 }
+
   # Make template changes take effect immediately.
   config.action_mailer.perform_caching = false
 

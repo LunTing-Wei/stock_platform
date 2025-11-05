@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
-  <head>
+
+<head>
     <title><%= content_for(:title) || "Knowledge Site" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -19,9 +20,17 @@
 
     <%# Includes all stylesheet files in app/assets/stylesheets %>
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
-  </head>
+</head>
 
-  <body>
+<body>
+    <%if notice%>
+    <p class="notice"><%= notice %></p>
+    <% end %>
+    <% if alert %>
+    <p class="alert"><%= alert %></p>
+    <% end %>
+
     <%= yield %>
-  </body>
+</body>
+
 </html>
