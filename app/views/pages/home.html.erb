@@ -4,6 +4,7 @@
     <% if user_signed_in? %>
     <p class="text-xl mb-4">嗨，<%= current_user.email %>！</p>
     <div class="space-x-4">
+        <%= link_to "我的筆記", notes_path, class: "bg-blue-500 text-white px-4 py-2 rounded" %>
         <%= link_to "登出", destroy_user_session_path, data: { turbo_method: :delete }, class: "bg-red-500 text-white px-4 py-2 rounded"%>
     </div>
     <% else %>
@@ -13,4 +14,6 @@
         <%= link_to "註冊", new_user_registration_path, class: "bg-green-500 text-white px-4 py-2 rounded" %>
     </div>
     <% end %>
+
+
 </div>
