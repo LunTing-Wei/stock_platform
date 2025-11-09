@@ -4,6 +4,15 @@ class User < ApplicationRecord
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :validatable
 
+  has_one :account, dependent: :destroy
   has_many :positions, dependent: :destroy
   has_many :orders, dependent: :destroy
+
+  after_create :create_account!
+
+  private
+
+  def create_account!
+    Account.create!(user: self, balance: 0, locked_balance: 0, currency: "USD")
+  end
 end

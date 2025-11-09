@@ -10,9 +10,21 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_06_084424) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_09_031929) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "accounts", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.decimal "balance", precision: 18, scale: 8, default: "0.0", null: false
+    t.decimal "locked_balance", precision: 18, scale: 8, default: "0.0", null: false
+    t.string "currency", default: "USD", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_accounts_on_user_id", unique: true
+    t.check_constraint "balance >= 0::numeric", name: "balance_non_negative"
+    t.check_constraint "locked_balance >= 0::numeric", name: "locked_balance_non_negative"
+  end
 
   create_table "notes", force: :cascade do |t|
     t.string "title"
@@ -51,6 +63,25 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_06_084424) do
     t.index ["user_id"], name: "index_positions_on_user_id"
   end
 
+  create_table "transactions", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "account_id", null: false
+    t.string "transactionable_type"
+    t.bigint "transactionable_id"
+    t.integer "transaction_type", null: false
+    t.decimal "amount", precision: 18, scale: 8, null: false
+    t.decimal "balance_after", precision: 18, scale: 8, null: false
+    t.text "description"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "created_at"], name: "index_transactions_on_account_id_and_created_at"
+    t.index ["account_id"], name: "index_transactions_on_account_id"
+    t.index ["transactionable_type", "transactionable_id", "created_at"], name: "index_transactions_on_transactionable_and_created_at"
+    t.index ["transactionable_type", "transactionable_id"], name: "index_transactions_on_transactionable"
+    t.index ["user_id", "created_at"], name: "index_transactions_on_user_id_and_created_at"
+    t.index ["user_id"], name: "index_transactions_on_user_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
@@ -63,7 +94,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_06_084424) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
+  add_foreign_key "accounts", "users"
   add_foreign_key "notes", "users"
   add_foreign_key "orders", "users"
   add_foreign_key "positions", "users"
+  add_foreign_key "transactions", "accounts"
+  add_foreign_key "transactions", "users"
 end
