@@ -37,10 +37,6 @@ class TradingService
   def execute_buy_order(symbol, quantity, price)
     total_cost = (quantity * price).to_d
 
-    puts "DEBUG: 餘額 = #{@account.balance}"
-    puts "DEBUG: 成本 = #{total_cost}"
-    puts "DEBUG: 餘額 < 成本 ? #{@account.balance < total_cost}"
-
     if @account.balance < total_cost
       raise InsufficientFundsError, "餘額不足。需要 #{total_cost}，可用 #{@account.balance}"
     end
