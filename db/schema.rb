@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_09_031929) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_12_025404) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -24,15 +24,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_09_031929) do
     t.index ["user_id"], name: "index_accounts_on_user_id", unique: true
     t.check_constraint "balance >= 0::numeric", name: "balance_non_negative"
     t.check_constraint "locked_balance >= 0::numeric", name: "locked_balance_non_negative"
-  end
-
-  create_table "notes", force: :cascade do |t|
-    t.string "title"
-    t.text "content"
-    t.bigint "user_id", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["user_id"], name: "index_notes_on_user_id"
   end
 
   create_table "orders", force: :cascade do |t|
@@ -95,7 +86,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_09_031929) do
   end
 
   add_foreign_key "accounts", "users"
-  add_foreign_key "notes", "users"
   add_foreign_key "orders", "users"
   add_foreign_key "positions", "users"
   add_foreign_key "transactions", "accounts"

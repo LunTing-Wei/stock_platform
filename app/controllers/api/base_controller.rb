@@ -25,10 +25,13 @@ class Api::BaseController < ApplicationController
   end
 
   def authenticate_user!
-    unless user_signed_in?
+    unless current_user
       render_error("需要登入", status: :unauthorized, code: "UNAUTHORIZED")
-      nil
     end
+  end
+
+  def current_user
+    @current_user ||= User.find_by(id: session[:user_id]) if session[:user_id]
   end
 
   rescue_from ActiveRecord::RecordNotFound do |e|
