@@ -4,7 +4,7 @@ class Api::PositionsController < Api::BaseController
     positions = positions.where(symbol: params[:symbol]) if params[:symbol].present?
     positions = positions.order(symbol: :asc)
     positions_data = positions.map do |position|
-      current_price = position.average_cost
+      current_price = mock_current_price(position.average_cost)
       market_value = position.quantity * current_price
       cost_basis = position.quantity * position.average_cost
       profit_loss = market_value - cost_basis
@@ -43,7 +43,7 @@ class Api::PositionsController < Api::BaseController
 
   def show
     position = current_user.positions.find(params[:id])
-    current_price = position.average_cost  # 實際應該從外部 API 取得
+    current_price = mock_current_price(position.average_cost)
     market_value = position.quantity * current_price
     cost_basis = position.quantity * position.average_cost
     profit_loss = market_value - cost_basis
@@ -64,5 +64,13 @@ class Api::PositionsController < Api::BaseController
         updated_at: position.updated_at
       }
     })
+  end
+
+  private
+
+  def mock_current_price(average_cost)
+    variation = rand(-0.10..0.10)
+    new_price = average_cost * (1 + variation)
+    new_price.round(2)
   end
 end
