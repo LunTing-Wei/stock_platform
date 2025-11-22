@@ -12,8 +12,14 @@ Rails.application.routes.draw do
     # Api routes
     resources :orders, only: [ :index, :show, :create ]
 
-    resource :account, only: [ :show ]
+    resource :account, only: [ :show ] do
+      post :deposit
+      post :withdraw
+    end
     resources :transactions, only: [ :index ]
     resources :positions, only: [ :index, :show ]
+
+    # 股價查詢 API
+    resources :stock_prices, only: [ :show ], param: :symbol
   end
 end

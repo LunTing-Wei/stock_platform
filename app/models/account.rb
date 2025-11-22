@@ -4,31 +4,8 @@ class Account < ApplicationRecord
   has_many :transactions, dependent: :restrict_with_error
 
   validates :balance, numericality: { greater_than_or_equal_to: 0 }
-  validates :locked_balance, numericality: { greater_than_or_equal_to: 0 }
   validates :currency, presence: true, inclusion: { in: %w[USD TWD] }
 
-  # 可用餘額
-  def available_balance
-    balance - locked_balance
-  end
-
-  # 鎖定金額（掛單時用）
-  def lock_funds!(amount)
-    raise ArgumentError, "鎖定金額必須大於 0" if amount <= 0
-    raise InsufficientFundsError, "可用餘額不足" if available_balance < amount
-
-    self.locked_balance += amount
-    save!
-  end
-
-  # 解鎖金額（取消掛單時用）
-  def unlock_funds!(amount)
-    raise ArgumentError, "解鎖金額必須大於 0" if amount <= 0
-    raise ArgumentError, "鎖定餘額不足" if locked_balance < amount
-
-    self.locked_balance -= amount
-    save!
-  end
 
   # 出帳 （買進時用）
   def debit!(amount, transaction_type:, description: nil, transactionable: nil)

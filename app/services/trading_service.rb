@@ -102,6 +102,7 @@ class TradingService
     if position.new_record?
       position.quantity = quantity
       position.average_cost = price
+      position.current_price = price
     else
       total_cost = position.quantity * position.average_cost + quantity * price
       position.quantity += quantity

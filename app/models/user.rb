@@ -14,6 +14,6 @@ class User < ApplicationRecord
   private
 
   def create_account!
-    Account.create!(user: self, balance: 0, locked_balance: 0, currency: "USD")
+    Account.create!(user: self, balance: 100_000, currency: "TWD")
   end
 end

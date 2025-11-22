@@ -14,7 +14,7 @@ class Api::BaseController < ApplicationController
     }, status: status
   end
 
-  def render_error(message, status: :unprocessable_entity, code: nil)
+  def render_error(message, status: :unprocessable_content, code: nil)
     render json: {
       success: false,
       error: {
@@ -39,14 +39,18 @@ class Api::BaseController < ApplicationController
   end
 
   rescue_from TradingService::InsufficientFundsError do |e|
-    render_error(e.message, status: :unprocessable_entity, code: "INSUFFICIENT_FUNDS")
+    render_error(e.message, status: :unprocessable_content, code: "INSUFFICIENT_FUNDS")
   end
 
   rescue_from TradingService::InsufficientPositionError do |e|
-    render_error(e.message, status: :unprocessable_entity, code: "INSUFFICIENT_POSITION")
+    render_error(e.message, status: :unprocessable_content, code: "INSUFFICIENT_POSITION")
+  end
+
+  rescue_from Account::InsufficientFundsError do |e|
+    render_error(e.message, status: :unprocessable_content, code: "INSUFFICIENT_FUNDS")
   end
 
   rescue_from ArgumentError do |e|
-    render_error(e.message, status: :bad_request, code: "INVALID_PARAMS")
+    render_error(e.message, status: :unprocessable_content, code: "INVALID_PARAMS")
   end
 end

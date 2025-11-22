@@ -23,6 +23,9 @@ gem "rack-cors"
 # Use Devise for authentication
 gem "devise"
 
+# API 和外部服務
+gem "httparty", "~> 0.22.0"
+
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[ windows jruby ]
 

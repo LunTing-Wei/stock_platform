@@ -1,6 +1,17 @@
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
   allow do
-    origins "http://localhost:5173"
+    origins case Rails.env
+    when "development"
+              [ "http://localhost:5173", "http://localhost:3000" ]
+    when "production"
+              ENV.fetch("FRONTEND_URL") {
+                raise "FRONTEND_URL environment variable must be set in production"
+              }
+    when "test"
+              "*"
+    else
+              "http://localhost:5173"
+    end
 
     resource "*",
       headers: :any,

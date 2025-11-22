@@ -3,7 +3,7 @@ RSpec.describe "API::Account", type: :request do
   let(:user) { create(:user, :with_balance, balance: 10000) }
 
   before do
-    sign_in user, scope: :user
+    sign_in_as(user)
 
     service = TradingService.new(user)
     service.execute_order(symbol: 'AAPL', side: :buy, quantity: 10, price: 100)
@@ -28,9 +28,7 @@ RSpec.describe "API::Account", type: :request do
 
       account_data = json['data']['account']
       expect(account_data['balance']).to eq(8000.0)
-      expect(account_data['locked_balance']).to eq(0.0)
-      expect(account_data['available_balance']).to eq(8000.0)
-      expect(account_data['currency']).to eq('USD')
+      expect(account_data['currency']).to eq('TWD')
     end
 
     it '應該包含持倉市值' do
@@ -62,7 +60,7 @@ RSpec.describe "API::Account", type: :request do
 
   describe "未登入時" do
     before do
-      sign_out user
+      allow_any_instance_of(Api::BaseController).to receive(:current_user).and_return(nil)
     end
 
     it '應該回傳 401' do
@@ -72,6 +70,116 @@ RSpec.describe "API::Account", type: :request do
       json = JSON.parse(response.body)
       expect(json['success']).to be false
       expect(json['error']['code']).to eq('UNAUTHORIZED')
+    end
+  end
+
+  describe "POST /api/account/deposit" do
+    it '應該能成功入金' do
+      initial_balance = user.account.balance
+
+      post '/api/account/deposit', params: { amount: 1000 }
+
+      expect(response).to have_http_status(:created)
+      json = JSON.parse(response.body)
+
+      expect(json['success']).to be true
+      expect(json['data']['account']['balance']).to eq((initial_balance + 1000).to_f)
+      expect(json['data']['transaction']['amount']).to eq(1000.0)
+      expect(json['data']['transaction']['transaction_type']).to eq('deposit')
+    end
+
+    it '應該能指定入金描述' do
+      post '/api/account/deposit', params: { amount: 500, description: '銀行轉帳' }
+
+      json = JSON.parse(response.body)
+      expect(json['data']['transaction']['description']).to eq('銀行轉帳')
+    end
+
+    it '金額為 0 時應該回傳錯誤' do
+      post '/api/account/deposit', params: { amount: 0 }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      json = JSON.parse(response.body)
+
+      expect(json['success']).to be false
+      expect(json['error']['message']).to eq('金額必須大於 0')
+    end
+
+    it '金額為負數時應該回傳錯誤' do
+      post '/api/account/deposit', params: { amount: -100 }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      json = JSON.parse(response.body)
+
+      expect(json['success']).to be false
+    end
+
+    it '應該建立 Transaction 記錄' do
+      expect {
+        post '/api/account/deposit', params: { amount: 1000 }
+      }.to change(Transaction, :count).by(1)
+
+      transaction = Transaction.last
+      expect(transaction.transaction_type).to eq('deposit')
+      expect(transaction.amount).to eq(1000.0)
+    end
+  end
+
+  describe "POST /api/account/withdraw" do
+    it '應該能成功出金' do
+      initial_balance = user.account.balance
+
+      post '/api/account/withdraw', params: { amount: 1000 }
+
+      expect(response).to have_http_status(:created)
+      json = JSON.parse(response.body)
+
+      expect(json['success']).to be true
+      expect(json['data']['account']['balance']).to eq((initial_balance - 1000).to_f)
+      expect(json['data']['transaction']['amount']).to eq(-1000.0)  # 負數表示扣款
+      expect(json['data']['transaction']['transaction_type']).to eq('withdrawal')
+    end
+
+    it '應該能指定出金描述' do
+      post '/api/account/withdraw', params: { amount: 500, description: '提款到銀行' }
+
+      json = JSON.parse(response.body)
+      expect(json['data']['transaction']['description']).to eq('提款到銀行')
+    end
+
+    it '金額為 0 時應該回傳錯誤' do
+      post '/api/account/withdraw', params: { amount: 0 }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      json = JSON.parse(response.body)
+
+      expect(json['success']).to be false
+      expect(json['error']['message']).to eq('金額必須大於 0')
+    end
+
+    it '金額為負數時應該回傳錯誤' do
+      post '/api/account/withdraw', params: { amount: -100 }
+
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    it '餘額不足時應該回傳錯誤' do
+      post '/api/account/withdraw', params: { amount: 999999 }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      json = JSON.parse(response.body)
+
+      expect(json['success']).to be false
+      expect(json['error']['message']).to include('餘額不足')
+    end
+    it '應該建立 Transaction 記錄' do
+      expect {
+        post '/api/account/withdraw', params: { amount: 1000 }
+      }.to change(Transaction, :count).by(1)
+
+      transaction = Transaction.last
+      expect(transaction.transaction_type).to eq('withdrawal')
+      expect(transaction.amount).to eq(-1000.0)
     end
   end
 end

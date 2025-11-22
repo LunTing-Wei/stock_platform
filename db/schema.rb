@@ -10,20 +10,18 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_12_025404) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_22_001230) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
   create_table "accounts", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.decimal "balance", precision: 18, scale: 8, default: "0.0", null: false
-    t.decimal "locked_balance", precision: 18, scale: 8, default: "0.0", null: false
     t.string "currency", default: "USD", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["user_id"], name: "index_accounts_on_user_id", unique: true
     t.check_constraint "balance >= 0::numeric", name: "balance_non_negative"
-    t.check_constraint "locked_balance >= 0::numeric", name: "locked_balance_non_negative"
   end
 
   create_table "orders", force: :cascade do |t|
@@ -46,12 +44,18 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_12_025404) do
   create_table "positions", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.string "symbol", null: false
-    t.decimal "quantity", precision: 18, scale: 8, default: "0.0", null: false
-    t.decimal "average_cost", precision: 18, scale: 8, default: "0.0", null: false
+    t.decimal "quantity", precision: 18, scale: 8, null: false
+    t.decimal "average_cost", precision: 18, scale: 8, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.decimal "current_price", precision: 10, scale: 2, null: false
+    t.datetime "price_updated_at"
+    t.index ["price_updated_at"], name: "index_positions_on_price_updated_at"
     t.index ["user_id", "symbol"], name: "index_positions_on_user_id_and_symbol", unique: true
     t.index ["user_id"], name: "index_positions_on_user_id"
+    t.check_constraint "average_cost > 0::numeric", name: "average_cost_positive"
+    t.check_constraint "current_price >= 0::numeric", name: "current_price_non_negative"
+    t.check_constraint "quantity > 0::numeric", name: "quantity_positive"
   end
 
   create_table "transactions", force: :cascade do |t|

@@ -70,5 +70,11 @@ RSpec.configure do |config|
   config.include FactoryBot::Syntax::Methods
 
   # 讓 Request Spec 可以用 sign_in
-  config.include Devise::Test::IntegrationHelpers, type: :request
+  # config.include Devise::Test::IntegrationHelpers, type: :request
+
+  config.include Module.new {
+    def sign_in_as(user)
+      allow_any_instance_of(Api::BaseController).to receive(:current_user).and_return(user)
+    end
+  }, type: :request
 end

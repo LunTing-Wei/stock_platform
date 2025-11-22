@@ -21,7 +21,7 @@ class Api::Sessions::RegistrationsController < Api::BaseController
       render json: {
         success: false,
         errors: user.errors.full_messages
-      }, status: :unprocessable_entity
+      }, status: :unprocessable_content
     end
   end
 

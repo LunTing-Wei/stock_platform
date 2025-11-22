@@ -3,11 +3,12 @@ class Api::OrdersController < Api::BaseController
     orders = current_user.orders
 
     orders = orders.where(symbol: params[:symbol]) if params[:symbol].present?
-
     orders = orders.where(side: params[:side]) if params[:side].present?
-
     orders = orders.where(status: params[:status]) if params[:status].present?
+
     orders = orders.order(created_at: :desc)
+
+    total_count = orders.count
 
     page = params[:page]&.to_i || 1
     per_page = 20
@@ -18,7 +19,8 @@ class Api::OrdersController < Api::BaseController
       pagination: {
         current_page: page,
         per_page: per_page,
-        total: current_user.orders.count
+        total: total_count,
+        total_pages: (total_count.to_f / per_page).ceil
       }
     })
   end

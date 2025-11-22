@@ -68,7 +68,7 @@ RSpec.describe "API::Orders", type: :request do
       it '應該回傳錯誤' do
         post '/api/orders', params: invalid_params
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
 
         json = JSON.parse(response.body)
         expect(json['success']).to be false
