@@ -1,9 +1,26 @@
 require 'rails_helper'
 RSpec.describe "API::Account", type: :request do
+  describe "未登入時" do
+    before do
+      # 確保沒有登入狀態
+      Warden.test_reset!
+    end
+
+    it '應該回傳 401' do
+      get '/api/account'
+
+      expect(response).to have_http_status(:unauthorized)
+      json = JSON.parse(response.body)
+      expect(json['success']).to be false
+      expect(json['error']['code']).to eq('UNAUTHORIZED')
+    end
+  end
+
+
   let(:user) { create(:user, :with_balance, balance: 10000) }
 
   before do
-    sign_in_as(user)
+    sign_in user, scope: :user
 
     service = TradingService.new(user)
     service.execute_order(symbol: 'AAPL', side: :buy, quantity: 10, price: 100)
@@ -57,22 +74,6 @@ RSpec.describe "API::Account", type: :request do
       expect(account_data['updated_at']).to be_present
     end
   end
-
-  describe "未登入時" do
-    before do
-      allow_any_instance_of(Api::BaseController).to receive(:current_user).and_return(nil)
-    end
-
-    it '應該回傳 401' do
-      get '/api/account'
-
-      expect(response).to have_http_status(:unauthorized)
-      json = JSON.parse(response.body)
-      expect(json['success']).to be false
-      expect(json['error']['code']).to eq('UNAUTHORIZED')
-    end
-  end
-
   describe "POST /api/account/deposit" do
     it '應該能成功入金' do
       initial_balance = user.account.balance

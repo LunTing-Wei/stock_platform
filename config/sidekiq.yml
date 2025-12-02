@@ -1,0 +1,7 @@
+# Sidekiq 同時處理 5 個工作
+:concurrency: 5
+
+# 定義工作佇列的優先順序
+:queues:
+  - default
+  - mailers

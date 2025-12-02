@@ -1,27 +1,27 @@
-class Api::Sessions::RegistrationsController < Api::BaseController
-  skip_before_action :authenticate_user!, only: [ :create ]
+class Api::Sessions::RegistrationsController < Devise::RegistrationsController
+  skip_before_action :verify_authenticity_token
+  respond_to :json
 
   def create
-    user = User.new(sign_up_params)
+    build_resource(sign_up_params)
 
-    if user.save
-      reset_session
-      session[:user_id] = user.id
+    if resource.save
+      sign_up(resource_name, resource)
 
       render json: {
         success: true,
         data: {
           user: {
-            id: user.id,
-            email: user.email
+            id: resource.id,
+            email: resource.email
           }
         }
       }, status: :created
     else
       render json: {
         success: false,
-        errors: user.errors.full_messages
-      }, status: :unprocessable_content
+        errors: resource.errors.full_messages
+      }, status: :unprocessable_entity
     end
   end
 

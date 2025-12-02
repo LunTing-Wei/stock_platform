@@ -1,10 +1,11 @@
 class Api::AccountsController < Api::BaseController
   def show
     @account = current_user.account
+    authorize @account
 
-    total_position_value = current_user.positions.sum do |position|
-      position.market_value
-    end
+    total_position_value = current_user.positions.pick(
+      Arel.sql("SUM(quantity * current_price)")
+    ) || 0
 
     render_success({
       account: {
@@ -20,6 +21,8 @@ class Api::AccountsController < Api::BaseController
   end
 
   def deposit
+    @account = current_user.account
+    authorize @account, :update?
     amount  = params[:amount].to_d
     description = params[:description] || "入金"
 
@@ -31,6 +34,18 @@ class Api::AccountsController < Api::BaseController
       amount,
       transaction_type: :deposit,
       description: description
+    )
+
+    AuditLog.log(
+      user: current_user,
+      action: "deposit",
+      auditable: transaction,
+      metadata: {
+        amount: amount.to_f,
+        description: description,
+        balance_after: transaction.balance_after.to_f
+      },
+      ip_address: request.remote_ip
     )
 
     render_success({
@@ -50,6 +65,9 @@ class Api::AccountsController < Api::BaseController
   end
 
   def withdraw
+    @account = current_user.account
+    authorize @account, :update?
+
     amount = params[:amount].to_d
     description = params[:description] || "出金"
 
@@ -62,6 +80,19 @@ class Api::AccountsController < Api::BaseController
       transaction_type: :withdrawal,
       description: description
     )
+
+    AuditLog.log(
+      user: current_user,
+      action: "withdraw",
+      auditable: transaction,
+      metadata: {
+        amount: amount.to_f,
+        description: description,
+        balance_after: transaction.balance_after.to_f
+      },
+      ip_address: request.remote_ip
+    )
+
     render_success({
       account: {
         balance: current_user.account.balance.to_f,

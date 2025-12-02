@@ -1,6 +1,7 @@
 class Api::OrdersController < Api::BaseController
   def index
     orders = current_user.orders
+    authorize Order
 
     orders = orders.where(symbol: params[:symbol]) if params[:symbol].present?
     orders = orders.where(side: params[:side]) if params[:side].present?
@@ -27,6 +28,7 @@ class Api::OrdersController < Api::BaseController
 
   def show
     order = current_user.orders.find(params[:id])
+    authorize order
 
     render_success({
       order: order.as_json(
@@ -45,6 +47,7 @@ class Api::OrdersController < Api::BaseController
     end
 
     service = TradingService.new(current_user)
+    authorize Order
 
     order = service.execute_order(
       symbol: order_params[:symbol],
@@ -52,6 +55,21 @@ class Api::OrdersController < Api::BaseController
       quantity: order_params[:quantity].to_i,
       price: order_params[:price].to_f
     )
+
+    AuditLog.log(
+      user: current_user,
+      action: "create_order",
+      auditable: order,
+      metadata: {
+        symbol: order.symbol,
+        side: order.side,
+        quantity: order.quantity,
+        price: order.price.to_f,
+        status: order.status
+      },
+      ip_address: request.remote_ip
+    )
+
     render_success({
       order: order.as_json(only: [ :id, :symbol, :side, :quantity, :price, :status, :executed_at, :created_at ])
     }, status: :created)

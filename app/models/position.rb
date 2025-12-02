@@ -4,8 +4,10 @@ class Position < ApplicationRecord
   validates :symbol, presence: true
   validates :quantity, numericality: { greater_than: 0 }
   validates :average_cost, numericality: { greater_than: 0 }
-  validates :current_price, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
+  validates :current_price, numericality: { greater_than_or_equal_to: 0 }
   validates :symbol, uniqueness: { scope: :user_id }
+
+  before_validation :set_default_current_price, on: :create
 
   # 股價更新間隔（5 分鐘）
   PRICE_REFRESH_INTERVAL = 5.minutes
@@ -39,5 +41,11 @@ class Position < ApplicationRecord
       "profit_loss" => unrealized_gain_loss.to_f,
       "profit_loss_percentage" => unrealized_return_rate
     )
+  end
+
+  private
+
+  def set_default_current_price
+    self.current_price ||= average_cost
   end
 end

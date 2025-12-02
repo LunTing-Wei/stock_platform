@@ -8,7 +8,7 @@ Rails.application.config.middleware.insert_before 0, Rack::Cors do
                 raise "FRONTEND_URL environment variable must be set in production"
               }
     when "test"
-              "*"
+              [ "http://localhost:5173", "http://localhost:3000" ]
     else
               "http://localhost:5173"
     end

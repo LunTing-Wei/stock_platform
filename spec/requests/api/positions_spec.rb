@@ -1,5 +1,21 @@
 require 'rails_helper'
 RSpec.describe "API::Positions", type: :request do
+  describe '未登入時' do
+    before do
+      Warden.test_reset!
+    end
+
+    it 'GET /api/positions 應該回傳 401' do
+      get '/api/positions'
+
+      expect(response).to have_http_status(:unauthorized)
+
+      json = JSON.parse(response.body)
+      expect(json['success']).to be false
+      expect(json['error']['code']).to eq('UNAUTHORIZED')
+    end
+  end
+
   let(:user) { create(:user, :with_balance, balance: 10000) }
 
   before do
@@ -168,26 +184,9 @@ RSpec.describe "API::Positions", type: :request do
       end
     end
   end
-
-  describe '未登入時' do
-    before do
-      sign_out user
-    end
-
-    it 'GET /api/positions 應該回傳 401' do
-      get '/api/positions'
-
-      expect(response).to have_http_status(:unauthorized)
-
-      json = JSON.parse(response.body)
-      expect(json['success']).to be false
-      expect(json['error']['code']).to eq('UNAUTHORIZED')
-    end
-
     it 'GET /api/positions/:id 應該回傳 401' do
       get '/api/positions/1'
 
       expect(response).to have_http_status(:unauthorized)
     end
-  end
 end

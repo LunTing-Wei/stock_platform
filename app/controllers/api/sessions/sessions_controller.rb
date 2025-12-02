@@ -1,47 +1,44 @@
-class Api::Sessions::SessionsController < Api::BaseController
-  skip_before_action :authenticate_user!, only: [ :create ]
+class Api::Sessions::SessionsController < Devise::SessionsController
+  skip_before_action :verify_authenticity_token
+  respond_to :json
 
   def create
-    user = User.find_by(email: params[:user][:email])
+    self.resource = warden.authenticate!(auth_options)
+    sign_in(resource_name, resource)
 
-    if user && user.valid_password?(params[:user][:password])
-      reset_session
-      session[:user_id] = user.id
+    render json: {
+      success: true,
+      data: {
+        user: {
+          id: resource.id,
+          email: resource.email
+        }
+      }
+    }, status: :created
+  end
 
+  def destroy
+    signed_out = (Devise.sign_out_all_scopes ? sign_out : sign_out(resource_name))
+
+    if signed_out
       render json: {
         success: true,
-        data: {
-          user: {
-            id: user.id,
-            email: user.email
-          }
-        }
-      }, status: :created
+        message: "登出成功"
+      }, status: :ok
     else
       render json: {
         success: false,
         error: {
-          message: "帳號或密碼錯誤",
-          code: "INVALID_CREDENTIALS"
+          message: "登出失敗",
+          code: "SIGN_OUT_FAILED"
         }
-      }, status: :unauthorized
+      }, status: :unprocessable_entity
     end
   end
 
-  def destroy
-    reset_session
-    response.set_cookie(
-      :_stock_platform_session,
-      value: "",
-      expires: 1.year.ago,
-      path: "/",
-      httponly: true,
-      same_site: :lax
-    )
+  private
 
-    render json: {
-      success: true,
-      message: "登出成功"
-    }, status: :ok
+  def respond_to_on_destroy
+    head :no_content
   end
 end

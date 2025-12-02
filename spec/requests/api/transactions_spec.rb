@@ -1,5 +1,21 @@
 require 'rails_helper'
 RSpec.describe "API::Transactions", type: :request do
+  describe '未登入時' do
+    before do
+      Warden.test_reset!
+    end
+
+    it '應該回傳 401' do
+      get '/api/transactions'
+
+      expect(response).to have_http_status(:unauthorized)
+
+      json = JSON.parse(response.body)
+      expect(json['success']).to be false
+      expect(json['error']['code']).to eq('UNAUTHORIZED')
+    end
+  end
+
   let(:user) { create(:user, :with_balance, balance: 10000) }
 
   before do
@@ -122,22 +138,6 @@ RSpec.describe "API::Transactions", type: :request do
         json = JSON.parse(response.body)
         expect(json['data']['transactions'].size).to eq(0)
       end
-    end
-  end
-
-  describe '未登入時' do
-    before do
-      sign_out user
-    end
-
-    it '應該回傳 401' do
-      get '/api/transactions'
-
-      expect(response).to have_http_status(:unauthorized)
-
-      json = JSON.parse(response.body)
-      expect(json['success']).to be false
-      expect(json['error']['code']).to eq('UNAUTHORIZED')
     end
   end
 end

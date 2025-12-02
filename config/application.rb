@@ -6,7 +6,7 @@ require "rails/all"
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
 
-module KnowledgeSite
+module StockPlatform
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 8.0
@@ -17,6 +17,12 @@ module KnowledgeSite
     # not contain `.rb` files, or that should not be reloaded or eager loaded.
     # Common ones are `templates`, `generators`, or `middleware`, for example.
     config.autoload_lib(ignore: %w[assets tasks])
+
+    # Active Job 使用 Sidekiq 作為背景工作處理器
+    config.active_job.queue_adapter = :sidekiq
+
+    # 啟用 Rack::Attack middleware
+    config.middleware.use Rack::Attack
 
     # Configuration for the application, engines, and railties goes here.
     #

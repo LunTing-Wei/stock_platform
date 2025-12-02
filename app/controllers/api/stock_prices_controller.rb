@@ -1,70 +1,58 @@
 # API：查詢股票即時價格
 class Api::StockPricesController < Api::BaseController
-  skip_before_action :authenticate_user!
+  skip_before_action :authenticate_user!, only: [ :show, :history ]
 
   def show
     symbol = params[:symbol]
+    service = FinmindService.new
 
-    if symbol.blank?
-      render_error("股票代碼不能為空", status: :bad_request, code: "INVALID_SYMBOL")
-      nil
-    end
+    price = service.fetch_latest_price(stock_id: symbol)
 
-    price_data = fetch_stock_price_with_cache(symbol)
-
-    if price_data[:price]
+    if price
       render_success({
         symbol: symbol,
-        price: price_data[:price],
-        date: price_data[:date],
+        price: price,
         updated_at: Time.current
       })
     else
-      render_error(
-        "無法獲取股價：#{price_data[:error]}",
-        status: :service_unavailable,
-        code: "PRICE_UNAVAILABLE"
-      )
+      render_error("無法取得股價", status: :not_found, code: "PRICE_NOT_FOUND")
+    end
+  end
+
+  def history
+    symbol = params[:symbol]
+
+    if params[:days].present?
+      days = params[:days].to_i
+      daily_prices = DailyPrice.for_symbol(symbol).recent(days)
+    elsif params[:from].present?
+      from = Date.parse(params[:from])
+      to = params[:to].present? ? Date.parse(params[:to]) : Date.today
+      daily_prices = DailyPrice.for_symbol(symbol).in_date_range(from, to).order(date: :asc)
+    else
+      daily_prices = DailyPrice.for_symbol(symbol).recent(30)
+    end
+
+    render_success({
+      symbol: symbol,
+      data: daily_prices.as_json(only: [ :date, :open, :high, :low, :close, :volume ]),
+      count: daily_prices.size
+    })
+  end
+
+  def import
+    symbol = params[:symbol]
+    days = params[:days]&.to_i || 30
+
+    service = StockPriceImportService.new(symbol)
+    result = service.import_recent_data(days)
+
+    if result[:success]
+      render_success(result)
+    else
+      render_error(result[:message], status: :unprocessable_entity)
     end
   end
 
   private
-
-  def fetch_stock_price_with_cache(symbol)
-    Rails.cache.fetch("stock_price:#{symbol}", expires_in: 1.minute) do
-      fetch_stock_price_from_api(symbol)
-    end
-  end
-
-  def fetch_stock_price_from_api(symbol)
-    service = FinmindService.new
-
-    result = service.fetch_stock_price(
-      stock_id: symbol,
-      start_date: 7.days.ago.to_date.to_s
-    )
-    if result[:success] && result[:data].present?
-      latest_data = result[:data].last
-
-      {
-        price: latest_data["close"].to_f,
-        date: latest_data["date"],
-        error: nil
-      }
-    else
-      {
-        price: nil,
-        date: nil,
-        error: result[:message] || "API 查詢失敗"
-      }
-    end
-  rescue StandardError => e
-    Rails.logger.error "Stock price API error for #{symbol}: #{e.message}"
-
-    {
-      price: nil,
-      date: nil,
-      error: e.message
-    }
-  end
 end

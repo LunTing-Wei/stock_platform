@@ -2,6 +2,11 @@ class TradingService
   class InsufficientPositionError < StandardError; end
   class InsufficientFundsError < StandardError; end
 
+  COMMISSION_RATE = 0.001425
+  DISCOUNT_RATE = 0.6
+  TAX_RATE = 0.003
+  MIN_COMMISSION = 1
+
   def initialize(user)
     @user = user
     @account = user.account
@@ -15,11 +20,13 @@ class TradingService
     ActiveRecord::Base.transaction do
       @account.lock!
 
+      position = @user.positions.lock.find_by(symbol: symbol)
+
       case side.to_s
       when "buy"
-        execute_buy_order(symbol, quantity, price)
+        execute_buy_order(symbol, quantity, price, position)
       when "sell"
-        execute_sell_order(symbol, quantity, price)
+        execute_sell_order(symbol, quantity, price, position)
       else
         raise ArgumentError, "無效的交易方向：#{side}"
       end
@@ -28,17 +35,31 @@ class TradingService
 
   private
 
+  def calculate_commission(amount)
+    commission = (amount * COMMISSION_RATE * DISCOUNT_RATE).to_d
+    commission = commission.round(0)
+    [ commission, MIN_COMMISSION ].max
+  end
+
+  def calculate_tax(amount)
+    tax = (amount * TAX_RATE).to_d
+
+    tax.round(0)
+  end
+
   def validate_params!(symbol, quantity, price)
     raise ArgumentError, "股票代碼不能為空" if symbol.blank?
     raise ArgumentError, "數量必須大於 0" if quantity <= 0
     raise ArgumentError, "價格必須大於 0" if price <= 0
   end
 
-  def execute_buy_order(symbol, quantity, price)
-    total_cost = (quantity * price).to_d
+  def execute_buy_order(symbol, quantity, price, position)
+    trade_amount = (quantity * price).to_d
+    commission = calculate_commission(trade_amount)
 
+    total_cost = trade_amount + commission
     if @account.balance < total_cost
-      raise InsufficientFundsError, "餘額不足。需要 #{total_cost}，可用 #{@account.balance}"
+      raise InsufficientFundsError, "餘額不足。需要 #{total_cost}（含手續費 #{commission}），可用 #{@account.balance}"
     end
 
     order = @user.orders.create!(
@@ -50,24 +71,33 @@ class TradingService
       executed_at: Time.current
     )
 
-    # 扣除帳戶餘額
     @account.debit!(
-      total_cost,
+      trade_amount,
       transaction_type: :buy,
       description: "買入 #{symbol} #{quantity} 股 @ #{price}",
       transactionable: order
     )
 
-    update_position_for_buy(symbol, quantity, price)
+    @account.debit!(
+      commission,
+      transaction_type: :fee,
+      description: "買入手續費 (#{symbol})",
+      transactionable: order
+    )
+
+    update_position_for_buy(symbol, quantity, price, position)
 
     order
   end
 
-  def execute_sell_order(symbol, quantity, price)
-    total_proceeds = (quantity * price).to_d
+  def execute_sell_order(symbol, quantity, price, position)
+    trade_amount = (quantity * price).to_d
 
-    # 檢查持倉（使用悲觀鎖）
-    position = @user.positions.lock.find_by(symbol: symbol)
+    commission = calculate_commission(trade_amount)
+
+    tax = calculate_tax(trade_amount)
+    net_proceeds = trade_amount - commission - tax
+
 
     if position.nil? || position.quantity < quantity
       raise InsufficientPositionError, "持倉不足。需要 #{quantity}，可用 #{position&.quantity || 0}"
@@ -82,11 +112,24 @@ class TradingService
       executed_at: Time.current
     )
 
-    # 增加帳戶餘額
     @account.credit!(
-      total_proceeds,
+      trade_amount,
       transaction_type: :sell,
       description: "賣出 #{symbol} #{quantity} 股 @ #{price}",
+      transactionable: order
+    )
+
+    @account.debit!(
+      commission,
+      transaction_type: :fee,
+      description: "賣出手續費 (#{symbol})",
+      transactionable: order
+    )
+
+    @account.debit!(
+      tax,
+      transaction_type: :fee,
+      description: "證券交易稅 (#{symbol})",
       transactionable: order
     )
 
@@ -96,19 +139,19 @@ class TradingService
     order
   end
 
-  def update_position_for_buy(symbol, quantity, price)
-    position = @user.positions.find_or_initialize_by(symbol: symbol)
-
-    if position.new_record?
-      position.quantity = quantity
-      position.average_cost = price
-      position.current_price = price
+  def update_position_for_buy(symbol, quantity, price, position)
+    if position.nil?
+      position = @user.positions.build(
+        symbol: symbol,
+        quantity: quantity,
+        average_cost: price,
+        current_price: price
+      )
     else
       total_cost = position.quantity * position.average_cost + quantity * price
       position.quantity += quantity
       position.average_cost = total_cost / position.quantity
     end
-
     position.save!
   end
 

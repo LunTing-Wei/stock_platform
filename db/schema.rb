@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_22_001230) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_02_022753) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -20,8 +20,38 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_22_001230) do
     t.string "currency", default: "USD", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "lock_version", default: 0, null: false
     t.index ["user_id"], name: "index_accounts_on_user_id", unique: true
     t.check_constraint "balance >= 0::numeric", name: "balance_non_negative"
+  end
+
+  create_table "audit_logs", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "action", null: false
+    t.string "auditable_type"
+    t.bigint "auditable_id"
+    t.jsonb "metadata", default: {}
+    t.string "ip_address"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["action"], name: "index_audit_logs_on_action"
+    t.index ["auditable_type", "auditable_id"], name: "index_audit_logs_on_auditable_type_and_auditable_id"
+    t.index ["user_id", "created_at"], name: "index_audit_logs_on_user_id_and_created_at"
+    t.index ["user_id"], name: "index_audit_logs_on_user_id"
+  end
+
+  create_table "daily_prices", force: :cascade do |t|
+    t.string "symbol", null: false
+    t.date "date", null: false
+    t.decimal "open", precision: 10, scale: 2, null: false
+    t.decimal "high", precision: 10, scale: 2, null: false
+    t.decimal "low", precision: 10, scale: 2, null: false
+    t.decimal "close", precision: 10, scale: 2, null: false
+    t.bigint "volume", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["date"], name: "index_daily_prices_on_date"
+    t.index ["symbol", "date"], name: "index_daily_prices_on_symbol_and_date", unique: true
   end
 
   create_table "orders", force: :cascade do |t|
@@ -90,6 +120,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_22_001230) do
   end
 
   add_foreign_key "accounts", "users"
+  add_foreign_key "audit_logs", "users"
   add_foreign_key "orders", "users"
   add_foreign_key "positions", "users"
   add_foreign_key "transactions", "accounts"

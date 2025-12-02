@@ -16,6 +16,7 @@ gem "tailwindcss-rails"
 gem "jbuilder"
 # CORS support for API
 gem "rack-cors"
+gem "rack-attack"
 
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 # gem "bcrypt", "~> 3.1.7"
@@ -25,6 +26,14 @@ gem "devise"
 
 # API 和外部服務
 gem "httparty", "~> 0.22.0"
+
+gem "sidekiq", "~> 7.0"
+gem "redis", "~> 5.0"
+gem "sidekiq-cron", "~> 1.12"
+# 錯誤監控
+gem "sentry-ruby"
+gem "sentry-rails"
+gem "sentry-sidekiq"
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[ windows jruby ]
@@ -71,3 +80,4 @@ group :test do
   gem "capybara"
   gem "selenium-webdriver"
 end
+gem "pundit", "~> 2.3"

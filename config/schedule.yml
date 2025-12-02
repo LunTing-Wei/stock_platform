@@ -1,0 +1,7 @@
+update_stock_price:
+  # - 0 14 * * 1-5 的意思：0分 下午兩點 每天 每月 星期一到五
+  cron: "0 14 * * 1-5"
+  class: "UpdateStockPricesJob"
+  queue: default
+  active_job: true
+  description: "每個交易日下午2點更新股價（週一到週五）"

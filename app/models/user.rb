@@ -8,6 +8,7 @@ class User < ApplicationRecord
   has_many :positions, dependent: :destroy
   has_many :orders, dependent: :destroy
   has_many :transactions
+  has_many :audit_logs, dependent: :destroy
 
   after_create :create_account!
 

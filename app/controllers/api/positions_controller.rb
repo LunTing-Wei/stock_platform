@@ -1,6 +1,7 @@
 class Api::PositionsController < Api::BaseController
   def index
     positions = current_user.positions
+    authorize Position
     positions = positions.where(symbol: params[:symbol]) if params[:symbol].present?
     positions = positions.order(symbol: :asc)
     render_success({
@@ -11,26 +12,37 @@ class Api::PositionsController < Api::BaseController
 
   def show
     position = current_user.positions.find(params[:id])
+    authorize position
     render_success(position: position.as_json)
   end
 
   private
 
   def calculate_summary(positions)
+    stats = positions.unscope(:order).pick(
+      Arel.sql("COUNT(*)"),
+      Arel.sql("SUM(quantity * current_price)"),
+      Arel.sql("SUM(quantity * average_cost)")
+    )
+
+    total_positions = stats[0] || 0
+    total_market_value = (stats[1] || 0).to_f
+    total_cost_basis = (stats[2] || 0).to_f
+
+    total_profit_loss = total_market_value - total_cost_basis
+
+    total_profit_loss_percentage = if total_cost_basis.zero?
+      0.0
+    else
+      ((total_profit_loss / total_cost_basis) * 100).round(2)
+    end
+
     {
-      total_positions: positions.size,
-      total_market_value: positions.sum(&:market_value).round(2),
-      total_cost_basis: positions.sum(&:cost_basis).round(2),
-      total_profit_loss: positions.sum(&:unrealized_gain_loss).round(2),
-      total_profit_loss_percentage: calculate_total_return_rate(positions)
+      total_positions: total_positions,
+      total_market_value: total_market_value.round(2),
+      total_cost_basis: total_cost_basis.round(2),
+      total_profit_loss: total_profit_loss.round(2),
+      total_profit_loss_percentage: total_profit_loss_percentage
     }
-  end
-
-  def calculate_total_return_rate(positions)
-    total_cost = positions.sum(&:cost_basis)
-    return 0.0 if total_cost.zero?
-
-    total_market_value = positions.sum(&:market_value)
-    ((total_market_value - total_cost)/ total_cost * 100).round(2)
   end
 end

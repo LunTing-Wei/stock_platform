@@ -1,6 +1,7 @@
 class Api::TransactionsController < Api::BaseController
   def index
     transactions = current_user.account.transactions
+    authorize Transaction
 
     if params[:transaction_type].present?
       transactions = transactions.where(transaction_type: params[:transaction_type])
