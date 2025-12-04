@@ -12,7 +12,10 @@ class Api::OrdersController < Api::BaseController
     total_count = orders.count
 
     page = params[:page]&.to_i || 1
-    per_page = 20
+    page = [ page, 1 ].max
+    per_page  =params[:per_page]&.to_i || 20
+    per_page = [ [ per_page, 100 ].min, 1 ].max
+
     orders = orders.limit(per_page).offset((page - 1) * per_page)
 
     render_success({

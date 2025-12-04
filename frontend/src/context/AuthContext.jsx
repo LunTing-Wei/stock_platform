@@ -8,7 +8,16 @@ export const AuthProvider = ({children}) => {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-    checkAuth()
+        checkAuth()
+
+        const handleLogout = () => {
+            setUser(null)
+        }
+
+        window.addEventListener('auth:logout', handleLogout)
+        return () => {
+            window.removeEventListener('auth:logout', handleLogout)
+        }
     }, [])
 
     const checkAuth = async () => {
@@ -16,7 +25,9 @@ export const AuthProvider = ({children}) => {
         const response = await api.get('/account')
         setUser(response.data.data.user || {authenticated: true})
       }catch(error) {
-        setUser(null)
+        if(error.response?.status === 401){
+            setUser(null)
+        }
       }finally{
         setLoading(false)
       }
@@ -41,8 +52,13 @@ export const AuthProvider = ({children}) => {
         return response
     }
     const logout = async() => {
-        await api.delete('/sessions/sign_out')
-        setUser(null)
+        try{
+            await api.delete('/sessions/sign_out')
+        }catch(error){
+            console.error('Logout API failed:', error)
+        }finally{
+            setUser(null)
+        }
     }
     // 簡寫 (ES6)
     const value = {
