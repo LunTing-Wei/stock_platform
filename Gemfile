@@ -27,7 +27,7 @@ gem "devise"
 # API 和外部服務
 gem "httparty", "~> 0.22.0"
 
-gem "sidekiq", "~> 7.0"
+gem "sidekiq", "~> 8.0"
 gem "redis", "~> 5.0"
 gem "sidekiq-cron", "~> 1.12"
 # 錯誤監控
