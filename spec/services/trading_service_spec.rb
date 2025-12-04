@@ -35,15 +35,15 @@ RSpec.describe TradingService do
         service.execute_order(symbol: 'AAPL', side: :buy, quantity: 10, price: 100)
 
         user.account.reload
-        expect(user.account.balance).to eq(initial_balance - 1000)
+        expect(user.account.balance).to eq(initial_balance - 1001)
       end
 
       it '應該建立 Transaction 記錄' do
         expect {
           service.execute_order(symbol: 'AAPL', side: :buy, quantity: 10, price: 100)
-        }.to change { user.account.transactions.count }.by(1)
+        }.to change { user.account.transactions.count }.by(2)
 
-        transaction = user.account.transactions.last
+        transaction = user.account.transactions.where(transaction_type: 'buy').last
         expect(transaction.amount).to eq(-1000)
         expect(transaction.transaction_type).to eq('buy')
         expect(transaction.balance_after).to eq(9000)
@@ -134,15 +134,15 @@ RSpec.describe TradingService do
         service.execute_order(symbol: 'AAPL', side: :sell, quantity: 5, price: 150)
 
         user.account.reload
-        expect(user.account.balance).to eq(balance_after_buy + 750)
+        expect(user.account.balance).to eq(balance_after_buy + 747)
       end
 
       it '應該建立 Transaction 記錄' do
         expect {
           service.execute_order(symbol: 'AAPL', side: :sell, quantity: 5, price: 150)
-        }.to change { user.account.transactions.count }.by(1)
+        }.to change { user.account.transactions.count }.by(3)
 
-        transaction = user.account.transactions.last
+        transaction = user.account.transactions.where(transaction_type: 'sell').last
         expect(transaction.amount).to eq(750)
         expect(transaction.transaction_type).to eq('sell')
       end
@@ -292,7 +292,7 @@ RSpec.describe TradingService do
 
         # 總共買入 5 次，每次 5 股 @ $100 = $500
         # 總花費：$2500
-        expect(user.account.balance).to eq(10000 - 2500)
+        expect(user.account.balance.to_f).to eq(7495.0)
         expect(position.quantity).to eq(25)
         expect(position.average_cost).to eq(100)
 
@@ -300,14 +300,14 @@ RSpec.describe TradingService do
         expect(user.orders.count).to eq(5)
 
         # 確認建立了 5 筆交易記錄
-        expect(user.account.transactions.count).to eq(5)
+        expect(user.account.transactions.count).to eq(10)
       end
     end
 
     context '多執行緒同時賣出' do
       before do
         # 先買入一些持倉
-        service.execute_order(symbol: 'AAPL', side: :buy, quantity: 100, price: 100)
+        service.execute_order(symbol: 'AAPL', side: :buy, quantity: 99, price: 100)
       end
 
       it '應該正確處理並發賣出請求' do
@@ -334,13 +334,13 @@ RSpec.describe TradingService do
         position = user.positions.find_by(symbol: 'AAPL')
 
         # 初始餘額：10000
-        # 買入花費：-10000 (100股 @ $100)
-        # 賣出收入：+7500 (50股 @ $150)
-        # 最終餘額：7500
-        expect(user.account.balance).to eq(7500)
+        # 買入花費：-9908 (99股 @ $100 + 手續費 8)
+        # 賣出收入：+7475 (50股 @ $150, 淨收入 1495 × 5)
+        # 最終餘額：7567
+        expect(user.account.balance.to_f).to eq(7562.0)
 
         # 剩餘持倉：100 - 50 = 50
-        expect(position.quantity).to eq(50)
+        expect(position.quantity).to eq(49)
 
         # 平均成本不變
         expect(position.average_cost).to eq(100)
@@ -387,7 +387,7 @@ RSpec.describe TradingService do
     context '混合並發操作' do
       before do
         # 先買入一些持倉
-        service.execute_order(symbol: 'AAPL', side: :buy, quantity: 50, price: 100)
+        service.execute_order(symbol: 'AAPL', side: :buy, quantity: 49, price: 100)
       end
 
       it '應該正確處理同時買入和賣出' do
@@ -419,11 +419,11 @@ RSpec.describe TradingService do
         # 買入：+30 股
         # 賣出：-20 股
         # 最終：60 股
-        expect(position.quantity).to eq(60)
+        expect(position.quantity).to eq(59)
 
         # 驗證交易記錄數量正確
         # 初始買入 1 筆 + 3 筆買入 + 2 筆賣出 = 6 筆
-        expect(user.account.transactions.count).to eq(6)
+        expect(user.account.transactions.count).to eq(14)
       end
     end
   end

@@ -26,6 +26,11 @@ class OrderPolicy < ApplicationPolicy
     false
   end
 
+  # 用戶可以取消自己的訂單
+  def cancel?
+    user_owns_order?
+  end
+
   # Scope: 只返回用戶自己的訂單
   class Scope < ApplicationPolicy::Scope
     def resolve

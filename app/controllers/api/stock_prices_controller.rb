@@ -41,6 +41,10 @@ class Api::StockPricesController < Api::BaseController
   end
 
   def import
+    unless current_user&.admin?
+      render_error("需要管理員權限", status: :forbidden, code: "ADMIN_REQUIRED")
+      return
+    end
     symbol = params[:symbol]
     days = params[:days]&.to_i || 30
 

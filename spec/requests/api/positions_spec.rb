@@ -14,6 +14,12 @@ RSpec.describe "API::Positions", type: :request do
       expect(json['success']).to be false
       expect(json['error']['code']).to eq('UNAUTHORIZED')
     end
+
+    it 'GET /api/positions/:id 應該回傳 401' do
+      get '/api/positions/1'
+
+      expect(response).to have_http_status(:unauthorized)
+    end
   end
 
   let(:user) { create(:user, :with_balance, balance: 10000) }
@@ -62,10 +68,10 @@ RSpec.describe "API::Positions", type: :request do
       json = JSON.parse(response.body)
       positions = json['data']['positions']
       aapl = positions.find { |p| p['symbol'] == 'AAPL' }
-      expect(aapl['quantity']).to eq(10.0)
-      expect(aapl['average_cost']).to eq(100.0)
-      expect(aapl['market_value']).to eq(1000.0)
-      expect(aapl['cost_basis']).to eq(1000.0)
+      expect(aapl['quantity'].to_f).to eq(10.0)
+      expect(aapl['average_cost'].to_f).to eq(100.0)
+      expect(aapl['market_value'].to_f).to eq(1000.0)
+      expect(aapl['cost_basis'].to_f).to eq(1000.0)
     end
 
     it '應該按股票代碼排序' do
@@ -115,7 +121,7 @@ RSpec.describe "API::Positions", type: :request do
         json = JSON.parse(response.body)
         aapl = json['data']['positions'].find { |p| p['symbol'] == 'AAPL' }
 
-        expect(aapl['quantity']).to eq(5.0)
+        expect(aapl['quantity'].to_f).to eq(5.0)
       end
 
       it '平均成本不應該改變' do
@@ -124,7 +130,7 @@ RSpec.describe "API::Positions", type: :request do
         json = JSON.parse(response.body)
         aapl = json['data']['positions'].find { |p| p['symbol'] == 'AAPL' }
 
-        expect(aapl['average_cost']).to eq(100.0)  # 保持不變
+        expect(aapl['average_cost'].to_f).to eq(100.0)  # 保持不變
       end
     end
 
@@ -147,7 +153,7 @@ RSpec.describe "API::Positions", type: :request do
   end
 
   describe "GET /api/positions/:id" do
-    let(:position) { user.positions.find_by(symbol: 'AAPL') }
+    let!(:position) { user.positions.find_by(symbol: 'AAPL') }
 
     it '應該回傳持倉詳情' do
       get "/api/positions/#{position.id}"
@@ -184,9 +190,4 @@ RSpec.describe "API::Positions", type: :request do
       end
     end
   end
-    it 'GET /api/positions/:id 應該回傳 401' do
-      get '/api/positions/1'
-
-      expect(response).to have_http_status(:unauthorized)
-    end
 end

@@ -10,6 +10,7 @@ class AuditLog < ApplicationRecord
     withdraw
     create_order
     execute_order
+    cancel_order
   ].freeze
 
   validates :action, inclusion: { in: ACTIONS }

@@ -33,16 +33,6 @@ class Position < ApplicationRecord
     quantity * average_cost
   end
 
-  def as_json(options = {})
-    super(options).merge(
-      "current_price" => price.to_f,
-      "cost_basis" => cost_basis.to_f,
-      "market_value" => market_value.to_f,
-      "profit_loss" => unrealized_gain_loss.to_f,
-      "profit_loss_percentage" => unrealized_return_rate
-    )
-  end
-
   private
 
   def set_default_current_price

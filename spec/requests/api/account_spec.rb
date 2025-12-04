@@ -44,7 +44,7 @@ RSpec.describe "API::Account", type: :request do
       json = JSON.parse(response.body)
 
       account_data = json['data']['account']
-      expect(account_data['balance']).to eq(8000.0)
+      expect(account_data['balance']).to eq(7998.0)
       expect(account_data['currency']).to eq('TWD')
     end
 
@@ -61,7 +61,7 @@ RSpec.describe "API::Account", type: :request do
 
       json = JSON.parse(response.body)
       account_data = json['data']['account']
-      expect(account_data['total_assets']).to eq(10000.0)
+      expect(account_data['total_assets']).to eq(9998.0)
     end
 
     it '應該包含時間戳記' do

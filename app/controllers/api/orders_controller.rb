@@ -46,14 +46,41 @@ class Api::OrdersController < Api::BaseController
       raise ArgumentError, "缺少必要參數"
     end
 
+    # 驗證 symbol 格式
+    unless order_params[:symbol].match?(/\A[A-Z]{1,10}\z/)
+      raise ArgumentError, "股票代碼格式錯誤(應為1-10個大寫字母)"
+    end
+
+    # 驗證 side
+    unless %w[buy sell].include?(order_params[:side])
+      raise ArgumentError, "交易方向必須是 buy 或 sell"
+    end
+
+    # 驗證 quantity
+    quantity = order_params[:quantity].to_i
+    if quantity <= 0
+      raise ArgumentError, "數量必須大於 0"
+    end
+
+    # 驗證 price
+    begin
+      price = BigDecimal(order_params[:price])
+    rescue ArgumentError, TypeError
+      raise ArgumentError, "價格格式錯誤"
+    end
+
+    if price <= 0
+      raise ArgumentError, "價格必須大於 0"
+    end
+
     service = TradingService.new(current_user)
     authorize Order
 
     order = service.execute_order(
       symbol: order_params[:symbol],
       side: order_params[:side].to_sym,
-      quantity: order_params[:quantity].to_i,
-      price: order_params[:price].to_f
+      quantity: quantity,
+      price: price
     )
 
     AuditLog.log(
@@ -73,6 +100,35 @@ class Api::OrdersController < Api::BaseController
     render_success({
       order: order.as_json(only: [ :id, :symbol, :side, :quantity, :price, :status, :executed_at, :created_at ])
     }, status: :created)
+  end
+
+  def cancel
+    order = current_user.orders.find(params[:id])
+    authorize order
+
+    order.cancel!
+
+    AuditLog.log(
+      user: current_user,
+      action: "cancel_order",
+      auditable: order,
+      metadata: {
+        symbol: order.symbol,
+        side: order.side,
+        quantity: order.quantity.to_f,
+        price: order.price.to_f
+      }
+    )
+
+    render_success({
+      message: "訂單已取消",
+      order: {
+        id: order.id,
+        status: order.status
+      }
+    })
+  rescue StandardError => e
+    render_error(e.message, status: :unprocessable_content)
   end
 
   private

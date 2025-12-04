@@ -12,6 +12,18 @@ class User < ApplicationRecord
 
   after_create :create_account!
 
+  def admin?
+    admin
+  end
+
+  # Fix for Devise 4.9.4 with Rails 8.0 compatibility issue
+  # Rails 8 changed Warden's session serialization to pass 5 arguments instead of 2
+  # https://github.com/heartcombo/devise/issues/5645
+  def self.serialize_from_session(key, salt, *args)
+    # key is the user ID, just find by ID
+    find_by(id: key)
+  end
+
   private
 
   def create_account!

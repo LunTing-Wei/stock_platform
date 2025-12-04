@@ -11,7 +11,7 @@ class Api::BaseController < ApplicationController
   def authenticate_user!
     unless current_user
       render_error("請先登入", status: :unauthorized, code: "UNAUTHORIZED")
-      return
+      nil
     end
   end
 

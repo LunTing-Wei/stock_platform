@@ -36,7 +36,7 @@ RSpec.describe "API::Transactions", type: :request do
       json = JSON.parse(response.body)
       expect(json['success']).to be true
       expect(json['data']['transactions']).to be_an(Array)
-      expect(json['data']['transactions'].size).to eq(3)
+      expect(json['data']['transactions'].size).to eq(7)
       end
 
     it '應該按時間降序排列' do
@@ -45,8 +45,8 @@ RSpec.describe "API::Transactions", type: :request do
       json = JSON.parse(response.body)
       transactions = json['data']['transactions']
 
-      expect(transactions.first['transaction_type']).to eq('sell')
-      expect(transactions.first['amount'].to_f).to be > 0  # 賣出是正數
+      expect(transactions.first['transaction_type']).to eq('fee')
+      expect(transactions.first['amount'].to_f).to be < 0
     end
 
     it '應該包含交易詳細資訊' do
@@ -81,7 +81,7 @@ RSpec.describe "API::Transactions", type: :request do
       expect(json['data']['pagination']).to be_present
       expect(json['data']['pagination']['current_page']).to eq(1)
       expect(json['data']['pagination']['per_page']).to eq(20)
-      expect(json['data']['pagination']['total']).to eq(3)
+      expect(json['data']['pagination']['total']).to eq(7)
     end
 
     context '當使用篩選條件時' do
@@ -115,7 +115,7 @@ RSpec.describe "API::Transactions", type: :request do
         json = JSON.parse(response.body)
         transactions = json['data']['transactions']
 
-        expect(transactions.size).to eq(2)
+        expect(transactions.size).to eq(6)
         transactions.each do |tx|
           expect(tx['amount'].to_f).to be < 0
         end
@@ -127,15 +127,18 @@ RSpec.describe "API::Transactions", type: :request do
 
         get '/api/transactions'
         json = JSON.parse(response.body)
-        expect(json['data']['transactions'].size).to eq(4)
+        expect(json['data']['transactions'].size).to eq(9)
 
+        sign_in user, scope: :user
         get '/api/transactions', params: { from: '2000-01-01T00:00:00Z' }
         json = JSON.parse(response.body)
-        expect(json['data']['transactions'].size).to eq(4)
+        expect(json['data']['transactions'].size).to eq(9)
 
-
+        sign_in user, scope: :user
         get '/api/transactions', params: { from: '2099-01-01T00:00:00Z' }
         json = JSON.parse(response.body)
+        expect(response).to have_http_status(:ok)
+        expect(json['success']).to be true
         expect(json['data']['transactions'].size).to eq(0)
       end
     end

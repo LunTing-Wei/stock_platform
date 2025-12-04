@@ -8,11 +8,11 @@ class Api::TransactionsController < Api::BaseController
     end
 
     if params[:from].present?
-      transactions = transactions.where("created_at >= ?", params[:from])
+      transactions = transactions.where("created_at >= ?", DateTime.parse(params[:from]))
     end
 
     if params[:to].present?
-      transactions = transactions.where("created_at <= ?", params[:to])
+      transactions = transactions.where("created_at <= ?", DateTime.parse(params[:to]))
     end
 
     case params[:direction]

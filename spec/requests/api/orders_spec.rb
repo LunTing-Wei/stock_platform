@@ -43,7 +43,7 @@ RSpec.describe "API::Orders", type: :request do
       it '應該扣除帳戶餘額' do
         expect {
           post '/api/orders', params: valid_params
-        }.to change { user.account.reload.balance }.by(-1000)
+        }.to change { user.account.reload.balance }.by(-1001)
       end
 
       it '應該建立訂單記錄' do
@@ -88,7 +88,7 @@ RSpec.describe "API::Orders", type: :request do
       it '應該回傳錯誤' do
         post '/api/orders', params: { order: { symbol: 'AAPL' } }
 
-        expect(response).to have_http_status(:bad_request)
+        expect(response).to have_http_status(:unprocessable_content)
 
         json = JSON.parse(response.body)
         expect(json['success']).to be false
@@ -110,7 +110,7 @@ RSpec.describe "API::Orders", type: :request do
       it '應該回傳參數錯誤' do
         post '/api/orders', params: invalid_params
 
-        expect(response).to have_http_status(:bad_request)
+        expect(response).to have_http_status(:unprocessable_content)
 
         json = JSON.parse(response.body)
         expect(json['success']).to be false

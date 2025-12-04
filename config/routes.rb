@@ -23,7 +23,11 @@ Rails.application.routes.draw do
 
   namespace :api do
     # Api routes
-    resources :orders, only: [ :index, :show, :create ]
+    resources :orders, only: [ :index, :show, :create ] do
+      member do
+        patch :cancel
+      end
+    end
 
     resource :account, only: [ :show ] do
       post :deposit

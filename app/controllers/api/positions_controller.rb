@@ -5,7 +5,7 @@ class Api::PositionsController < Api::BaseController
     positions = positions.where(symbol: params[:symbol]) if params[:symbol].present?
     positions = positions.order(symbol: :asc)
     render_success({
-      positions: positions.as_json,
+      positions: positions.map { |p| serialize_position(p) },
       summary: calculate_summary(positions)
     })
   end
@@ -13,7 +13,7 @@ class Api::PositionsController < Api::BaseController
   def show
     position = current_user.positions.find(params[:id])
     authorize position
-    render_success(position: position.as_json)
+    render_success({ position: serialize_position(position) })
   end
 
   private
@@ -43,6 +43,22 @@ class Api::PositionsController < Api::BaseController
       total_cost_basis: total_cost_basis.round(2),
       total_profit_loss: total_profit_loss.round(2),
       total_profit_loss_percentage: total_profit_loss_percentage
+    }
+  end
+  def serialize_position(position)
+    {
+      id: position.id,
+      user_id: position.user_id,
+      symbol: position.symbol,
+      quantity: position.quantity.to_f,
+      average_cost: position.average_cost.to_f,
+      current_price: position.price.to_f,
+      cost_basis: position.cost_basis.to_f,
+      market_value: position.market_value.to_f,
+      profit_loss: position.unrealized_gain_loss.to_f,
+      profit_loss_percentage: position.unrealized_return_rate,
+      created_at: position.created_at,
+      updated_at: position.updated_at
     }
   end
 end
