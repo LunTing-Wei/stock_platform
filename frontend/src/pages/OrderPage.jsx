@@ -41,7 +41,7 @@ function OrderPage(){
 
     const handleChange = (e) => {
         const { name, value } = e.target
-        const newValue = name === 'symbol' ? value.toUpperCase() : value
+        const newValue = value
         setFormData({
             ...formData,
             [name]: newValue
@@ -99,7 +99,10 @@ function OrderPage(){
 
         toast.success(`已查詢到 ${formData.symbol} 的股價`, { icon: '📈' })
       }catch(err){
-        const errorMessage = err.response?.data?.error?.message || '查詢股價失敗'
+        const errorData = err.response?.data?.error
+        const errorMessage = typeof errorData === 'string'
+          ? errorData
+          : errorData?.message || "查詢股價失敗"
         toast.error(errorMessage, { icon: '❌' })
       }finally{
         setFetchingPrice(false)
@@ -161,8 +164,8 @@ function OrderPage(){
       const symbol =formData.symbol.trim()
       if(!symbol){
         errors.symbol = '請輸入股票代碼'
-      }else if(!/^[A-Z0-9]+$/.test(symbol)){
-        errors.symbol = '股票代碼只能包含英文字母和數字'
+      }else if(!/^[0-9]{4,6}$/.test(symbol)){
+        errors.symbol = '股票代碼格式錯誤(應為4-6位數字)'
       }else if(symbol.length > 10){
         errors.symbol = '股票代碼最多 10 個字元'
       }
@@ -226,7 +229,10 @@ function OrderPage(){
             setStockPriceData(null)
         }catch(err){
             console.error('下單失敗:', err)
-            const errorMessage = err.response?.data?.error || '下單失敗，請稍後再試'
+            const errorData = err.response?.data?.error
+            const errorMessage = typeof errorData === 'string'
+              ? errorData
+              : errorData?.message || '下單失敗，請稍後再試'
             setError(errorMessage)
             toast.error(errorMessage,{icon:'❌'})
         }finally{

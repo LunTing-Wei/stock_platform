@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import api from '../api/client';
 import Navbar from '../components/Navbar'
+import AccountModal from '../components/AccountModal'
+import toast from 'react-hot-toast'
 
 function Dashboard() {
     const { user, loading, logout } = useContext(AuthContext);
@@ -11,6 +13,8 @@ function Dashboard() {
     const [accountLoading, setAccountLoading] = useState(true);
     const [accountError, setAccountError] = useState(null)
     const [positionsSummary, setPositionsSummary] = useState(null)
+    const [showDepositModal, setShowDepositModal] = useState(false)
+    const [showWithdrawModal, setShowWithdrawModal] = useState(false)
 
     useEffect(()=>{
         if(!loading && !user){
@@ -55,6 +59,35 @@ function Dashboard() {
           total_profit_loss: 0,
           total_profit_loss_percentage: 0
         })
+      }
+    }
+
+    const handleDeposit = async (amount) => {
+      try{
+        await api.post('/account/deposit', { amount })
+        toast.success(`存款成功! +$${amount.toFixed(2)}`, { icon: '💰' })
+
+        fetchAccount()
+      }catch(error){
+        console.error('存款失敗:', error)
+        const errorMsg = error.response?.data?.error || '存款失敗,請稍後再試'
+        toast.error(errorMsg, { icon: '❌' })
+        throw error
+      }
+    }
+
+    const handleWithdraw = async (amount) => {
+      try{
+        await api.post('/account/withdraw', { amount })
+
+        toast.success(`提款成功! -$${amount.toFixed(2)}`, { icon: '💸' })
+
+        fetchAccount()
+      }catch(error){
+        console.error('提款失敗:', error)
+        const errorMsg = error.response?.data?.error || '提款失敗,請稍後再試'
+        toast.error(errorMsg, { icon: '❌' })
+        throw error
       }
     }
     if(loading || accountLoading){
@@ -152,25 +185,67 @@ function Dashboard() {
 
           <div className="bg-white rounded-lg shadow-md p-6">
             <h2 className="text-2xl font-bold mb-4">快速操作</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <button 
-                onClick={() => navigate('/orders/new')}
-                className="bg-blue-500 text-white p-4 rounded-lg hover:bg-blue-600">
-                下單交易
-              </button>
-              <button
-                onClick={() => navigate('/positions')} 
-                className="bg-green-500 text-white p-4 rounded-lg hover:bg-green-600">
-                查看持倉
-              </button>
-              <button
-                onClick={() => navigate('/transactions')}
-                className="bg-purple-500 text-white p-4 rounded-lg hover:bg-purple-600">
-                交易記錄
-              </button>
+            
+            <div className="mb-4">
+              <h3 className="text-sm font-semibold text-gray-600 mb-2">帳戶管理</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button
+                  onClick={() => setShowDepositModal(true)}
+                  className="bg-green-500 text-white p-4 rounded-lg hover:bg-green-600 transition">
+                    💰 存款
+                </button>
+                <button
+                  onClick={() => setShowWithdrawModal(true)}
+                  className="bg-yellow-500 text-white p-4 rounded-lg hover:bg-yellow-600 transition">
+                    💸 提款
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold text-gray-600 mb-2">交易查詢</h3>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <button
+                  onClick={() => navigate('/orders')}
+                  className="bg-indigo-500 text-white p-4 rounded-lg hover:bg-indigo-600">
+                  📋 訂單列表
+                </button>
+                <button 
+                  onClick={() => navigate('/orders/new')}
+                  className="bg-blue-500 text-white p-4 rounded-lg hover:bg-blue-600">
+                  📊下單交易
+                </button>
+                <button
+                  onClick={() => navigate('/positions')} 
+                  className="bg-green-500 text-white p-4 rounded-lg hover:bg-green-600">
+                  📈查看持倉
+                </button>
+                <button
+                  onClick={() => navigate('/transactions')}
+                  className="bg-purple-500 text-white p-4 rounded-lg hover:bg-purple-600">
+                  📜交易記錄
+                </button>
+              </div>
             </div>
           </div>
         </div>
+
+        {/* 存款 Modal */}
+        <AccountModal
+          isOpen={showDepositModal}
+          onClose={() => setShowDepositModal(false)}
+          type="deposit"
+          currentBalance={account?.balance || 0}
+          onSuccess={handleDeposit}
+        />
+        {/* 提款 Modal */}
+        <AccountModal
+          isOpen={showWithdrawModal}
+          onClose={() => setShowWithdrawModal(false)}
+          type="withdraw"
+          currentBalance={account?.balance || 0}
+          onSuccess={handleWithdraw}
+        />
       </div>
     )
 }

@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import OrderPage from './pages/OrderPage';
 import PositionsPage from "./pages/PositionsPage";
 import TransactionsPage from './pages/TransactionsPage'
+import OrdersListPage from './pages/OrdersListPage'
 
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/orders/new" element={<OrderPage />} />
+            <Route path="/orders" element={<OrdersListPage />} />
             <Route path="/positions" element={<PositionsPage />} />
             <Route path="/transactions" element={<TransactionsPage />} />
           </Routes>

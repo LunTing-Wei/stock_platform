@@ -30,7 +30,11 @@ function RegisterPage () {
             if (errors && Array.isArray(errors)){
                 setError(errors.join(', '))
             } else {
-                setError(err.response?.data?.error?.message || '註冊失敗');
+              const errorData = err.response?.data?.error
+              const errorMessage = typeof errorData === 'string'
+                ? errorData
+                : errorData?.message || "註冊失敗"
+                setError(errorMessage);
             }
         }finally{
             setLoading(false)

@@ -20,7 +20,11 @@ function LoginPage() {
             await login(email,password)
             navigate('/dashboard')
         }catch(err){
-            setError(err.response?.data?.error?.message || '登入失敗');
+            const errorData = err.response?.data?.error
+            const errorMessage = typeof errorData === 'string'
+              ? errorData
+              : errorData?.message || '登入失敗'
+            setError(errorMessage);
         }finally{
             setLoading(false);
         }

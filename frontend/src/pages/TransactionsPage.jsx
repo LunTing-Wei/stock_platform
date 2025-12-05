@@ -15,6 +15,12 @@ function TransactionsPage() {
     const [error, setError] = useState(null)
 
     useEffect(() => {
+      if(!authLoading && !user){
+        navigate('/login')
+      }
+    },[authLoading, user, navigate])
+
+    useEffect(() => {
         if(user){
             fetchTransactions()
         }
@@ -52,7 +58,7 @@ function TransactionsPage() {
         buy: '買入',
         sell: '賣出',
         deposit: '入金',
-        withdraw: '出金',
+        withdrawal: '出金',
         fee: '手續費',
         dividend: '股息',
         adjustment: '調整'
@@ -65,7 +71,7 @@ function TransactionsPage() {
         buy: 'text-blue-600 bg-blue-50',
         sell: 'text-orange-600 bg-orange-50',
         deposit: 'text-green-600 bg-green-50',
-        withdraw: 'text-red-600 bg-red-50',
+        withdrawal: 'text-red-600 bg-red-50',
         fee: 'text-gray-600 bg-gray-50',
         dividend: 'text-purple-600 bg-purple-50',
         adjustment: 'text-yellow-600 bg-yellow-50'
@@ -148,7 +154,7 @@ function TransactionsPage() {
                                 </td>
 
                                 {/* 餘額 */}
-                <               td className="text-right py-3 px-4 text-gray-700">
+                                <td className="text-right py-3 px-4 text-gray-700">
                                     ${formatNumber(transaction.balance_after)}
                                 </td>
                               </tr>

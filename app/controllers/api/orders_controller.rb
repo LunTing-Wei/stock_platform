@@ -50,8 +50,8 @@ class Api::OrdersController < Api::BaseController
     end
 
     # 驗證 symbol 格式
-    unless order_params[:symbol].match?(/\A[A-Z]{1,10}\z/)
-      raise ArgumentError, "股票代碼格式錯誤(應為1-10個大寫字母)"
+    unless order_params[:symbol].match?(/\A[0-9]{4,6}\z/)
+      raise ArgumentError, "股票代碼格式錯誤(應為4-6位數字)"
     end
 
     # 驗證 side
